@@ -53,30 +53,15 @@ var supercrawler = require("supercrawler");
 // created.
 var crawler = new supercrawler.Crawler({
   // By default, Supercrawler uses a simple FIFO queue, which doesn't support
-  // retries or memory of crawl state. For any non-trivial crawl, you should
-  // create a database. Provide your database config to the constructor of
-  // DbUrlList.
-  urlList: new supercrawler.DbUrlList({
-    db: {
-      database: "crawler",
-      username: "root",
-      password: secrets.db.password,
-      sequelizeOpts: {
-        dialect: "mysql",
-        host: "localhost"
-      }
-    }
-  }),
+  // retries or memory of crawl state. 
   // Tme (ms) between requests
   interval: 1000,
   // Maximum number of requests at any one time.
-  concurrentRequestsLimit: 5,
-  // Time (ms) to cache the results of robots.txt queries.
-  robotsCacheTime: 3600000,
+  concurrentLimit: 4,
   // Query string to use during the crawl.
   userAgent: "Mozilla/5.0 (compatible; supercrawler/1.0; +https://github.com/brendonboshell/supercrawler)",
   // Custom options to be passed to request.
-  request: {
+  gotOptions: {
     headers: {
       'x-custom-header': 'example'
     }
@@ -87,9 +72,6 @@ var crawler = new supercrawler.Crawler({
 Third, add some content handlers.
 
 ```js
-// Get "Sitemaps:" directives from robots.txt
-crawler.addHandler(supercrawler.handlers.robotsParser());
-
 // Crawl sitemap files and extract their URLs.
 crawler.addHandler(supercrawler.handlers.sitemapsParser());
 

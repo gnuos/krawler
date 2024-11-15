@@ -1,3 +1,9 @@
 node_modules
 coverage
 .nyc_output
+npm-debug.log
+.DS_Store
+examples/_*
+examples/*.json
+travis-phantomjs
+.idea
