@@ -546,7 +546,7 @@ class Crawler extends EventEmitter {
         return newUrl;
       }
 
-      // 放进缓存为以后的异步处理做准备
+      // 放进缓存为以后的异步处理做准备，用链接的SHA256哈希值做索引
       this.getPageCache().set(newUrl.getUniqueId(), response);
       const ctx = { url: newUrl.getUrl(), contentType: contentType, body: response.body };
       try {
