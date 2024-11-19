@@ -11,7 +11,6 @@ export default [
   {
     rules: {
       'no-this-alias': 0,
-      'no-unused-vars': 0,
       'no-unused-vars': 0
     }
   }

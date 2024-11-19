@@ -1,5 +1,5 @@
 export default {
-  input: ['lib/index.mjs'],
+  input: ['index.mjs'],
   output: {
     file: 'dist/index.mjs',
     format: 'esm'

@@ -1,11 +1,9 @@
 # Node.js Web Crawler
 
-[![npm](https://img.shields.io/npm/v/supercrawler.svg?maxAge=2592000)]()
-[![npm](https://img.shields.io/npm/l/supercrawler.svg?maxAge=2592000)]()
-[![GitHub issues](https://img.shields.io/github/issues/brendonboshell/supercrawler.svg?maxAge=2592000)]()
-[![David](https://img.shields.io/david/brendonboshell/supercrawler.svg?maxAge=2592000)]()
-[![David](https://img.shields.io/david/dev/brendonboshell/supercrawler.svg?maxAge=2592000)]()
-[![Travis](https://img.shields.io/travis/brendonboshell/supercrawler.svg?maxAge=2592000)]()
+这是对 [Supercrawler](https://github.com/brendonboshell/supercrawler) 项目的重构甚至重写了一下，为的是用ESM风格写出更好维护的代码，并且对并发能力做一下扩展，更新了对应依赖库的版本，把比较旧的request库换成了got库，去除了robots.txt和sqlite3的依赖
+
+
+## 原项目的介绍
 
 Supercrawler is a Node.js web crawler. It is designed to be highly configurable and easy to use.
 
@@ -35,73 +33,94 @@ The **Priority Queue** or **UrlList** keeps track of which URLs need to be crawl
 
 The **Content Handlers** are functions which take content buffers and do some further processing with them. You will almost certainly want to create your own content handlers to analyze pages or store data, for example. The content handlers tell the Crawler about new URLs that should be crawled in the future. Supercrawler provides content handlers to parse links from HTML pages, analyze robots.txt files for `Sitemap:` directives and parse sitemap files for URLs.
 
-## Get Started
+---
 
-First, install Supercrawler.
+## 开始使用
 
+第一步，安装这个库
+
+```sh
+npm install https://github.com/gnuos/krawler --save
+
+# or
+
+yarn add https://github.com/gnuos/krawler
 ```
-npm install supercrawler --save
-```
 
-Second, create an instance of `Crawler`.
+第二步，创建一个 `Crawler` 实例
 
 ```js
-var supercrawler = require("supercrawler");
+import Craler from 'krawler';
 
 // 1. Create a new instance of the Crawler object, providing configuration
 // details. Note that configuration cannot be changed after the object is
 // created.
-var crawler = new supercrawler.Crawler({
+const crawler = new Crawler({
   // By default, Supercrawler uses a simple FIFO queue, which doesn't support
   // retries or memory of crawl state. 
   // Tme (ms) between requests
-  interval: 1000,
+  interval: 200,
   // Maximum number of requests at any one time.
   concurrentLimit: 4,
   // Query string to use during the crawl.
-  userAgent: "Mozilla/5.0 (compatible; supercrawler/1.0; +https://github.com/brendonboshell/supercrawler)",
+  userAgent: "Mozilla/5.0 (compatible; supercrawler/1.0)",
   // Custom options to be passed to request.
   gotOptions: {
     headers: {
-      'x-custom-header': 'example'
+      'Referer': 'http://example.com'
     }
   }
 });
+
+// 注册 links 事件处理方法，用于对页面的内容进行处理
+crawler.on('links', (links) => {
+  console.debug(links);
+});
+
 ```
 
-Third, add some content handlers.
+第三步，注册一些内容类型的处理函数，最好是不要用到全局命名空间里的对象变量
+
+注册相同内容类型的处理函数时，只有最后一次设置会生效，通常建议把处理过程放在同一个函数体里面
 
 ```js
-// Crawl sitemap files and extract their URLs.
-crawler.addHandler(supercrawler.handlers.sitemapsParser());
+// 当内容类型的参数没有传的时候，默认就是 "*" 通配符类型
+crawler.setHandler(SitemapsParser());
 
-// Pick up <a href> links from HTML documents
-crawler.addHandler("text/html", supercrawler.handlers.htmlLinkParser({
+// 库里面提供了一个HtmlLinkParser工具函数，用Cheerio的CSS选择器从页面里面拿到所有的链接并返回
+// 过滤器参数通过hostnames列表筛选出指定域名的链接，并且注册一个 links 事件
+// 可以用crawler实例绑定 links 事件的处理函数
+crawler.setHandler("text/html", HtmlLinkParser({
   // Restrict discovered links to the following hostnames.
   hostnames: ["example.com"]
 }));
 
-// Match an array of content-type
-crawler.addHandler(["text/plain", "text/html"], myCustomHandler);
-
-// Custom content handler for HTML pages.
-crawler.addHandler("text/html", function (context) {
+// 可以自定义对某种内容类型的
+crawler.setHandler("text/html", function (context) {
   var sizeKb = Buffer.byteLength(context.body) / 1024;
   logger.info("Processed", context.url, "Size=", sizeKb, "KB");
+
+  return []
 });
+
+// Match an array of content-type
+crawler.setHandler(["text/plain", "text/html"], myCustomHandler);
 ```
 
-Fourth, add a URL to the queue and start the crawl.
-
+第四步，添加种子链接
 ```js
-crawler.getUrlList()
-  .insertIfNotExists(new supercrawler.Url("http://example.com/"))
-  .then(function () {
-    return crawler.start();
-  });
+await crawler.initSeed("http://example.com");
+
+// 可以先启动再添加种子地址，start()方法会调用一个递归方法在后台运行
+// 直到监听到 url_queue_complete 事件才会触发 stop() 方法调用
+const completed = crawler.start();
+
+// 这一句可以省略，在后面编写其他的异步代码
+await Promise.all(completed);
+
 ```
 
-That's it! Supercrawler will handle the crawling for you. You only have to define your custom behaviour in the content handlers.
+上面就是简单的使用教程了
 
 ## Crawler
 
